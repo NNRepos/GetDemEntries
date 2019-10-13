@@ -43,7 +43,7 @@ class MyTestCase(unittest.TestCase):
         table = GetEntriesFromTabroom.get_table_from_entry_page_markup(entries_table_markup)
         entries = GetEntriesFromTabroom.get_entries_from_table(table)
         entry = list(entries)[0]
-        self.assertEqual(entry.school, 'Dartmouth')
+        self.assertEqual(entry.school, 'Dartmouth College')
         self.assertEqual(entry.names[0], 'Chang')
         self.assertEqual(entry.names[1], 'DeConcini')
 

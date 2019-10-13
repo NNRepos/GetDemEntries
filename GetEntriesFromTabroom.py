@@ -2,9 +2,9 @@ import requests
 import bs4
 
 
-class Entry:
+class Partnership:
     """
-    Represents an entry (team/partnership) in a tournament.
+    Represents a debate partnership.
     """
     def __init__(self, school: str, names: tuple):
         if len(names) != 2:
@@ -46,19 +46,30 @@ def get_entries_from_table(table: bs4.element) -> list:
     :param table: Table of entries.
     :return: List of name lists.
     """
-    rows = table.find_all('tr')
-    for row in rows:
-        if len(row.find_all('td')) > 3:
-            columns = [column.text.strip() for column in row.find_all('td')]
+    for row in table.find_all('tr'):
+        # Skip rows with fewer than three columns - they won't have partnership info.
+        if len(row.find_all('td')) < 3:
+            continue
 
-            # Don't return TBA entries.
-            if columns[2] == 'Names TBA':
-                continue
+        columns = list(get_cells_from_row(row))
 
-            names = columns[2].replace('&', '').split()
-            school = ' '.join(columns[3].split()[:-1])
+        # Don't return TBA entries.
+        if columns[2] == 'Names TBA':
+            continue
 
-            yield Entry(school, tuple(names))
+        names = columns[2].replace('&', '').split()
+        school = columns[0]
+
+        yield Partnership(school, tuple(names))
+
+
+def get_cells_from_row(row: bs4.element) -> list:
+    """
+    Get text from cells in the given BS4 table row.
+    :param row: BS4 table row.
+    """
+    for column in row.find_all('td'):
+        yield column.text.strip()
 
 
 if __name__ == '__main__':
