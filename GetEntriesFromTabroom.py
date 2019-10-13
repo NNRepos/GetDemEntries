@@ -3,6 +3,9 @@ import bs4
 
 
 class Entry:
+    """
+    Represents an entry (team/partnership) in a tournament.
+    """
     def __init__(self, school: str, names: tuple):
         if len(names) != 2:
             raise Exception('Must pass at exactly two names for a partnership. Got {0}'.format(str(names)))
@@ -22,9 +25,18 @@ def get_entries(tabroom_entries_url: str) -> list:
     :return List of name lists.
     """
     r = requests.get(tabroom_entries_url)
-    soup = bs4.BeautifulSoup(r.text, 'html.parser')
-    table = soup.find(id='fieldsort')
+    table = get_table_from_entry_page_markup(r.text)
     return get_entries_from_table(table)
+
+
+def get_table_from_entry_page_markup(markup: str) -> bs4.element:
+    """
+    Get a BS4 table element from the given tournament entries page markup.
+    :param markup: Markup from a Tabroom tournament entries page.
+    :return: A BS4 table element for the entries table.
+    """
+    soup = bs4.BeautifulSoup(markup, 'html.parser')
+    return soup.find(id='fieldsort')
 
 
 def get_entries_from_table(table: bs4.element) -> list:
@@ -35,17 +47,21 @@ def get_entries_from_table(table: bs4.element) -> list:
     :return: List of name lists.
     """
     rows = table.find_all('tr')
-    entries_from_table = []
     for row in rows:
         if len(row.find_all('td')) > 3:
             columns = [column.text.strip() for column in row.find_all('td')]
+
+            # Don't return TBA entries.
+            if columns[2] == 'Names TBA':
+                continue
+
             names = columns[2].replace('&', '').split()
             school = ' '.join(columns[3].split()[:-1])
-            if names != ['Names TBA']:
-                entries_from_table.append(Entry(school, tuple(names)))
-    return entries_from_table
+
+            yield Entry(school, tuple(names))
 
 
 if __name__ == '__main__':
     entries = get_entries('https://www.tabroom.com/index/tourn/fields.mhtml?tourn_id=13142&event_id=111039')
-    print(entries)
+    for entry in entries:
+        print(entry.school + ' ' + entry.names[0][0] + entry.names[1][0] + ' - ' + ' & '.join(entry.names))
